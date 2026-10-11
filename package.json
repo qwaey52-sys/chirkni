@@ -1,0 +1,17 @@
+{
+  "name": "chirkni",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Чиркни — рисуй другу прямо на экране",
+  "scripts": {
+    "sync": "npx cap sync android",
+    "open:android": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/core": "^6.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2"
+  }
+}

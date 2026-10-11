@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Чиркни — рисунки прямо на экране</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #1B1A2E;
+    --ink-soft: #26243f;
+    --paper: #FFF8F0;
+    --paper-line: #EFE4D6;
+    --coral: #FF6B5B;
+    --coral-dark: #E04F3F;
+    --lilac: #C9B8FF;
+    --charcoal: #2A2630;
+    --grey: #8B8694;
+    --grey-light: #C9C4D0;
+    --white: #ffffff;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-sizing: border-box;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper: #211F33;
+      --paper-line: #302D4C;
+      --charcoal: #F1EEFB;
+      --grey: #A79FC2;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper: #211F33;
+    --paper-line: #302D4C;
+    --charcoal: #F1EEFB;
+    --grey: #A79FC2;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-padding-top: env(safe-area-inset-top, 0px);}
+  body{
+    margin:0;
+    min-height:100%;
+    background: var(--ink);
+    background-image:
+      radial-gradient(circle at 18% 20%, rgba(201,184,255,0.16), transparent 45%),
+      radial-gradient(circle at 85% 80%, rgba(255,107,91,0.12), transparent 50%);
+    font-family: 'Inter', sans-serif;
+    color: var(--charcoal);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .page{
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+  header.hero{
+    text-align:center;
+    margin-bottom: 44px;
+  }
+  .eyebrow-free{
+    color: var(--lilac);
+    font-size: 15px;
+    letter-spacing: 0.01em;
+    margin: 0 0 10px;
+  }
+  h1{
+    font-family:'Caveat', cursive;
+    font-weight:700;
+    font-size: clamp(42px, 7vw, 72px);
+    line-height: 0.95;
+    margin: 0 0 14px;
+    color: var(--white);
+  }
+  h1 span{ color: var(--coral); }
+  .sub{
+    color: #C7C3DB;
+    font-size: 17px;
+    max-width: 520px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+
+  .stage{
+    display:grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 28px;
+    align-items: start;
+    margin-top: 48px;
+  }
+  @media (max-width: 880px){
+    .stage{ grid-template-columns: 1fr; justify-items:center; }
+    .link-rail{ transform: rotate(90deg); margin: 8px 0; }
+  }
+
+  .phone-block{ display:flex; flex-direction:column; align-items:center; width: 100%; max-width: 360px; }
+  .phone-label{
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--lilac);
+    margin-bottom: 14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .dot{ width:7px; height:7px; border-radius:50%; background: var(--coral); }
+  .dot.live{ animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{opacity:1; transform:scale(1);} 50%{opacity:.4; transform:scale(0.7);} }
+
+  .phone{
+    width: 100%;
+    aspect-ratio: 9 / 19;
+    border-radius: 42px;
+    background: var(--ink-soft);
+    padding: 12px;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05) inset;
+    position: relative;
+  }
+  .notch{
+    position:absolute;
+    top: 12px; left:50%; transform: translateX(-50%);
+    width: 90px; height: 22px; background: var(--ink-soft);
+    border-radius: 0 0 16px 16px;
+    z-index: 5;
+  }
+  .screen{
+    width:100%; height:100%;
+    border-radius: 32px;
+    overflow:hidden;
+    position: relative;
+    background: var(--paper);
+  }
+
+  /* --- Drawing app screen --- */
+  .app-topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 20px 16px 10px;
+  }
+  .app-topbar .title{
+    font-family:'Caveat', cursive;
+    font-weight:700;
+    font-size: 24px;
+    color: var(--charcoal);
+  }
+  .app-topbar .you{
+    font-size: 11px;
+    color: var(--grey);
+    background: var(--paper-line);
+    padding: 4px 10px;
+    border-radius: 100px;
+  }
+  .canvas-wrap{
+    margin: 0 12px;
+    border-radius: 20px;
+    overflow:hidden;
+    background:
+      linear-gradient(var(--paper-line) 1px, transparent 1px) 0 0/ 100% 28px,
+      var(--paper);
+    position:relative;
+    height: calc(100% - 180px);
+    touch-action: none;
+  }
+  canvas{ display:block; width:100%; height:100%; }
+  .hint{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    text-align:center; padding: 0 30px;
+    color: var(--grey);
+    font-size: 13px;
+    pointer-events:none;
+    transition: opacity .3s ease;
+  }
+  .hint.hide{ opacity: 0; }
+
+
+  .toolbar{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap: 10px;
+    padding: 14px 10px 6px;
+  }
+  .tool{
+    width: 42px; height: 42px;
+    border-radius: 14px;
+    border: none;
+    background: var(--paper-line);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    color: var(--charcoal);
+    transition: transform .12s ease, background .15s ease;
+  }
+  .tool svg{ width:19px; height:19px; }
+  .tool:active{ transform: scale(0.9); }
+  .tool.active{ background: var(--charcoal); color: var(--paper); }
+
+  .swatches{
+    display:flex; gap:8px; padding: 2px 16px 16px; justify-content:center;
+  }
+  .swatch{
+    width: 24px; height:24px; border-radius:50%;
+    border: 2px solid transparent;
+    cursor:pointer;
+    padding:0;
+  }
+  .swatch.active{ border-color: var(--charcoal); }
+
+  /* --- Lock screen widget --- */
+  .lockscreen{
+    width:100%; height:100%;
+    background:
+      radial-gradient(circle at 30% 10%, #3a2f63 0%, transparent 55%),
+      linear-gradient(180deg, #16142a 0%, #0f0e1f 100%);
+    display:flex; flex-direction:column; align-items:center;
+    padding-top: 34px;
+    color: var(--white);
+    position: relative;
+  }
+  .lock-time{ font-size: 54px; font-weight:600; letter-spacing: -0.02em; line-height:1; }
+  .lock-date{ font-size: 13px; color: #B8B2D6; margin-top: 6px; margin-bottom: 22px; }
+
+  .widget{
+    width: 76%;
+    aspect-ratio: 1.6/1;
+    border-radius: 24px;
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255,255,255,0.12);
+    position: relative;
+    overflow:hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  }
+  .widget-label{
+    position:absolute; top:10px; left:12px;
+    font-size: 10px; color: #CFC9E8;
+    display:flex; align-items:center; gap:6px;
+    z-index:3;
+  }
+  .widget canvas{ background: transparent; }
+  .widget-empty{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    text-align:center; padding: 0 24px;
+    font-size: 12.5px; color: #9089B3;
+    transition: opacity .3s ease;
+  }
+  .widget-empty.hide{ opacity:0; }
+
+  .lock-foot{
+    margin-top: auto; margin-bottom: 26px;
+    font-size: 11.5px; color: #948DB5;
+    text-align:center; line-height:1.5;
+    padding: 0 30px;
+  }
+
+  .link-rail{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    height: 100%;
+    padding-top: 90px;
+    gap: 10px;
+  }
+  .link-rail .beam{
+    width: 2px; height: 70px;
+    background: repeating-linear-gradient(180deg, var(--lilac) 0 6px, transparent 6px 12px);
+    animation: flow 1s linear infinite;
+  }
+  @keyframes flow{ to{ background-position: 0 -36px; } }
+  .link-rail .arrow{ color: var(--lilac); font-size: 18px; }
+
+  footer.note{
+    max-width: 640px;
+    margin: 56px auto 0;
+    text-align:center;
+    color: #9089B3;
+    font-size: 13.5px;
+    line-height: 1.6;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding-top: 24px;
+  }
+  footer.note b{ color: #C7C3DB; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="hero">
+    <p class="eyebrow-free">прототип</p>
+    <h1>Чиркни другу <span>прямо сейчас</span></h1>
+    <p class="sub">Рисуешь на одном телефоне — линия тут же появляется у близкого человека, даже у него на экране блокировки.</p>
+  </header>
+
+  <div class="stage">
+    <div class="phone-block">
+      <div class="phone-label"><span class="dot live"></span>твой экран — приложение</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="app-topbar">
+            <div class="title">чиркни</div>
+            <div class="you">вам → Саша</div>
+          </div>
+          <div class="canvas-wrap" id="canvasWrap">
+            <canvas id="drawCanvas"></canvas>
+            <div class="hint" id="drawHint">Веди пальцем или мышкой здесь</div>
+
+          </div>
+          <div class="toolbar">
+            <button class="tool active" data-tool="pen" title="Маркер">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            </button>
+            <button class="tool" data-tool="eraser" title="Ластик">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H9l-6-6a2 2 0 0 1 0-2.8l8-8a2 2 0 0 1 2.8 0l6 6a2 2 0 0 1 0 2.8L13 20"/></svg>
+            </button>
+            <button class="tool" data-tool="ruler" title="Линейка (прямая линия)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="9" width="18" height="6" rx="1"/><path d="M7 9v3"/><path d="M11 9v3"/><path d="M15 9v3"/></svg>
+            </button>
+            <button class="tool" id="clearBtn" title="Очистить">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
+            </button>
+          </div>
+          <div class="swatches" id="swatches"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="link-rail">
+      <div class="beam"></div>
+      <div class="arrow">↓</div>
+      <div class="beam"></div>
+    </div>
+
+    <div class="phone-block">
+      <div class="phone-label"><span class="dot"></span>экран Саши — заблокирован</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="lockscreen">
+            <div class="lock-time" id="lockTime">21:04</div>
+            <div class="lock-date" id="lockDate">суббота, 11 октября</div>
+            <div class="widget">
+              <div class="widget-label"><span class="dot live"></span>чиркни · живой виджет</div>
+              <canvas id="widgetCanvas"></canvas>
+              <div class="widget-empty" id="widgetEmpty">Как только вам кто-то<br>чиркнёт — появится тут</div>
+            </div>
+            <div class="lock-foot">Рисунок приходит на виджет за секунду,<br>без разблокировки телефона</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="note">
+    Это рабочий прототип логики, оба экрана на одной странице для наглядности. В реальном приложении левый экран — ваш телефон, правый — телефон близкого человека, а рисунок передаётся между ними через сервер за долю секунды, неважно, Android у вас или iPhone.
+  </footer>
+</div>
+
+<script>
+(function(){
+  const drawCanvas = document.getElementById('drawCanvas');
+  const widgetCanvas = document.getElementById('widgetCanvas');
+  const dctx = drawCanvas.getContext('2d');
+  const wctx = widgetCanvas.getContext('2d');
+  const hint = document.getElementById('drawHint');
+  const widgetEmpty = document.getElementById('widgetEmpty');
+  const wrap = document.getElementById('canvasWrap');
+  const widgetBox = document.querySelector('.widget');
+
+  const colors = ['#2A2630', '#FF6B5B', '#4F7CFF', '#36B37E', '#FFB020'];
+  let color = colors[0];
+  let tool = 'pen';
+  let drawing = false;
+  let startX = 0, startY = 0;
+  let snapshotForRuler = null;
+
+  function sizeCanvases(){
+    [ [drawCanvas, wrap], [widgetCanvas, widgetBox] ].forEach(([cv, box])=>{
+      const rect = box.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const prevImg = cv._hasContent ? cv.toDataURL() : null;
+      cv.width = Math.max(1, Math.round(rect.width * dpr));
+      cv.height = Math.max(1, Math.round(rect.height * dpr));
+      cv.style.width = rect.width + 'px';
+      cv.style.height = rect.height + 'px';
+      const ctx = cv.getContext('2d');
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+    });
+  }
+  sizeCanvases();
+  window.addEventListener('resize', ()=>{ sizeCanvases(); });
+
+  function getPos(e, canvas){
+    const rect = canvas.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+  }
+
+  function mirrorStroke(fn){
+    // apply same operation proportionally on widget canvas
+    const scaleX = widgetCanvas.getBoundingClientRect().width / drawCanvas.getBoundingClientRect().width;
+    const scaleY = widgetCanvas.getBoundingClientRect().height / drawCanvas.getBoundingClientRect().height;
+    fn(wctx, scaleX, scaleY);
+  }
+
+  function beginStroke(pos){
+    drawing = true;
+    startX = pos.x; startY = pos.y;
+    hint.classList.add('hide');
+    widgetEmpty.classList.add('hide');
+    drawCanvas._hasContent = true;
+    widgetCanvas._hasContent = true;
+
+    if (tool === 'ruler'){
+      snapshotForRuler = dctx.getImageData(0,0,drawCanvas.width, drawCanvas.height);
+    } else {
+      dctx.beginPath();
+      dctx.moveTo(pos.x, pos.y);
+      mirrorStroke((ctx, sx, sy)=>{ ctx.beginPath(); ctx.moveTo(pos.x*sx, pos.y*sy); });
+    }
+  }
+
+  function moveStroke(pos){
+    if (!drawing) return;
+    const lw = tool === 'eraser' ? 16 : 4.5;
+
+    if (tool === 'ruler'){
+      if (snapshotForRuler) dctx.putImageData(snapshotForRuler, 0, 0);
+      dctx.strokeStyle = color; dctx.lineWidth = 4.5;
+      dctx.beginPath(); dctx.moveTo(startX, startY); dctx.lineTo(pos.x, pos.y); dctx.stroke();
+      return; // mirrored only on end for ruler to keep it simple
+    }
+
+    dctx.strokeStyle = tool === 'eraser' ? '#FFF8F0' : color;
+    dctx.lineWidth = lw;
+    dctx.globalCompositeOperation = tool === 'eraser' ? 'destination-out' : 'source-over';
+    if (tool === 'eraser'){
+      dctx.globalCompositeOperation = 'source-over';
+      dctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--paper').trim() || '#FFF8F0';
+    }
+    dctx.lineTo(pos.x, pos.y);
+    dctx.stroke();
+
+    mirrorStroke((ctx, sx, sy)=>{
+      ctx.strokeStyle = dctx.strokeStyle;
+      ctx.lineWidth = lw * ((sx+sy)/2);
+      ctx.lineTo(pos.x*sx, pos.y*sy);
+      ctx.stroke();
+    });
+  }
+
+  function endStroke(pos){
+    if (!drawing) return;
+    if (tool === 'ruler' && pos){
+      mirrorStroke((ctx, sx, sy)=>{
+        ctx.strokeStyle = color; ctx.lineWidth = 4.5 * ((sx+sy)/2);
+        ctx.beginPath(); ctx.moveTo(startX*sx, startY*sy); ctx.lineTo(pos.x*sx, pos.y*sy); ctx.stroke();
+      });
+    }
+    drawing = false;
+    snapshotForRuler = null;
+  }
+
+  ['mousedown','touchstart'].forEach(ev=>{
+    drawCanvas.addEventListener(ev, e=>{ e.preventDefault(); beginStroke(getPos(e, drawCanvas)); }, {passive:false});
+  });
+  ['mousemove','touchmove'].forEach(ev=>{
+    drawCanvas.addEventListener(ev, e=>{ e.preventDefault(); if(drawing) moveStroke(getPos(e, drawCanvas)); }, {passive:false});
+  });
+  ['mouseup','mouseleave','touchend','touchcancel'].forEach(ev=>{
+    drawCanvas.addEventListener(ev, e=>{ endStroke(getPos(e, drawCanvas)); }, {passive:false});
+  });
+
+  // Tools
+  document.querySelectorAll('.tool[data-tool]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tool[data-tool]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      tool = btn.dataset.tool;
+    });
+  });
+
+  document.getElementById('clearBtn').addEventListener('click', ()=>{
+    dctx.clearRect(0,0,drawCanvas.width, drawCanvas.height);
+    wctx.clearRect(0,0,widgetCanvas.width, widgetCanvas.height);
+    hint.classList.remove('hide');
+    widgetEmpty.classList.remove('hide');
+  });
+
+  // Swatches
+  const swatchWrap = document.getElementById('swatches');
+  colors.forEach((c, i)=>{
+    const b = document.createElement('button');
+    b.className = 'swatch' + (i===0 ? ' active' : '');
+    b.style.background = c;
+    b.addEventListener('click', ()=>{
+      color = c;
+      document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('active'));
+      b.classList.add('active');
+    });
+    swatchWrap.appendChild(b);
+  });
+
+  // Clock
+  function updateClock(){
+    const now = new Date();
+    document.getElementById('lockTime').textContent =
+      now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    const days = ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
+    const months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+    document.getElementById('lockDate').textContent = days[now.getDay()] + ', ' + now.getDate() + ' ' + months[now.getMonth()];
+  }
+  updateClock();
+  setInterval(updateClock, 15000);
+})();
+</script>
+</body>
+</html>

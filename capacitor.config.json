@@ -1,0 +1,9 @@
+{
+  "appId": "com.chirkni.app",
+  "appName": "Чиркни",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": true
+  }
+}
